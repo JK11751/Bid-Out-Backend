@@ -133,7 +133,7 @@ const getAllSoldProducts = asyncHandler(async (req, res) => {
 });
 const getProductBySlug = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const product = await Product.findById(id);
+  const product = await Product.findById(id).populate('category', 'title');
   if (!product) {
     res.status(404);
     throw new Error("Product not found");
