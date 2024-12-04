@@ -1,4 +1,5 @@
 const express = require("express");
+const { getReviews, createOrUpdateReview, } = require("../controllers/reviewCtr");
 const {
   createProduct,
   getAllProducts,
@@ -25,6 +26,8 @@ router.get("/user", protect, getAllProductsofUser);
 router.get("/won-products", protect, getWonProducts);
 router.get("/sold", getAllSoldProducts);
 router.get("/:id", getProductBySlug);
+router.get("/:productId/reviews", getReviews);
+router.post("/:productId/reviews", protect, createOrUpdateReview,);
 
 // Only access for admin users
 router.patch("/admin/product-verified/:id", protect, isAdmin, verifyAndAddCommissionProductByAmdin);

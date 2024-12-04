@@ -33,7 +33,7 @@ const placeBid = asyncHandler(async (req, res) => {
     }
     existingUserBid.price = price;
     await existingUserBid.save();
-    res.status(200).json({ biddingProduct: existingUserBid });
+    return res.status(200).json({ biddingProduct: existingUserBid });
   } else {
     const highestBid = await BiddingProduct.findOne({ product: productId }).sort({ price: -1 });
     if (highestBid && price <= highestBid.price) {
@@ -120,7 +120,7 @@ const sellProduct = asyncHandler(async (req, res) => {
   await sendEmail({
     email: highestBid.user.email,
     subject: "Congratulations! You won the auction!",
-    text: `You have won the auction for "${product.title}" with a bid of $${highestBid.price}.`,
+    message: `You have won the auction for "${product.title}" with a bid of $${highestBid.price}.`,
   });
 
   res.status(200).json({ message: "Product has been successfully sold!" });

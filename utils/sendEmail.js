@@ -5,19 +5,20 @@ const sendEmail = async (options) => {
     throw new Error("No recipients defined");
   }
   const transport = nodemailer.createTransport({
-    host: process.env.SMPT_HOST,
-    port: process.env.SMPT_PORT,
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
     auth: {
-      user: process.env.SMPT_EMAIL,
-      pass: process.env.SMPT_PASS,
+      user: process.env.SMTP_EMAIL,
+      pass: process.env.SMTP_PASS,
     },
   });
 
   const message = {
-    from: `${process.env.SMPT_FROM_NAME} <${process.env.SMPT_FROM_EMAIL}> `,
+    from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}> `,
     to: options.email,
     subject: options.subject,
-    text: options.message,
+    message: options.message,
+    html: `<p>${options.message}</p>`,
   };
 
   await transport.sendMail(message);
