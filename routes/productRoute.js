@@ -12,6 +12,10 @@ const {
   verifyAndAddCommissionProductByAmdin,
   getAllProductsofUser,
   getWonProducts,
+  getProductsByCategory,
+  addFavoriteProduct,
+  getFavoriteProducts,
+  removeFavoriteProduct,
 } = require("../controllers/productCtr");
 const { upload } = require("../utils/fileUpload");
 const { protect, isSeller, isAdmin } = require("../middleWare/authMiddleWare");
@@ -26,6 +30,10 @@ router.get("/user", protect, getAllProductsofUser);
 router.get("/won-products", protect, getWonProducts);
 router.get("/sold", getAllSoldProducts);
 router.get("/:id", getProductBySlug);
+router.post('/favorites', protect, addFavoriteProduct);
+router.get('/favorites', protect, getFavoriteProducts);
+router.get('/category/:category', getProductsByCategory);
+
 router.get("/:productId/reviews", getReviews);
 router.post("/:productId/reviews", protect, createOrUpdateReview,);
 
@@ -33,5 +41,5 @@ router.post("/:productId/reviews", protect, createOrUpdateReview,);
 router.patch("/admin/product-verified/:id", protect, isAdmin, verifyAndAddCommissionProductByAmdin);
 router.get("/admin/products", protect, isAdmin, getAllProductsByAmdin);
 router.delete("/admin/products", protect, isAdmin, deleteProductsByAmdin);
-
+router.delete('/favorites/:productId', protect, removeFavoriteProduct);
 module.exports = router;

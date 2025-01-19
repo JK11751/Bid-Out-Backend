@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const Product = require("../model/productModel");
+const Favorite = require("../model/FavoritesModel");
 const slugify = require("slugify");
 const BiddingProduct = require("../model/biddingProductModel");
 const cloudinary = require("cloudinary").v2;
@@ -82,6 +83,29 @@ const getAllProducts = asyncHandler(async (req, res) => {
         ...product._doc,
         biddingPrice,
         totalBids, // Adding the total number of bids
+      };
+    })
+  );
+
+  res.status(200).json(productsWithDetails);
+});
+
+const getProductsByCategory = asyncHandler(async (req, res) => {
+  const category = req.params.category;
+
+  const products = await Product.find({ category }).sort("-createdAt").populate("user");
+
+  const productsWithDetails = await Promise.all(
+    products.map(async (product) => {
+      const latestBid = await BiddingProduct.findOne({ product: product._id }).sort("-createdAt");
+      const biddingPrice = latestBid ? latestBid.price : product.price;
+
+      const totalBids = await BiddingProduct.countDocuments({ product: product._id });
+
+      return {
+        ...product._doc,
+        biddingPrice,
+        totalBids,
       };
     })
   );
@@ -277,6 +301,38 @@ const deleteProductsByAmdin = asyncHandler(async (req, res) => {
   }
 });
 
+const addFavoriteProduct = asyncHandler(async (req, res) => {
+  const { productId } = req.body;
+  const userId = req.user._id;
+
+  const favorite = new Favorite({
+    user: userId,
+    product: productId,
+  });
+
+  await favorite.save();
+  res.status(201).json({ message: 'Product added to favorites' });
+});
+
+
+const getFavoriteProducts = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  const favorites = await Favorite.find({ user: userId }).populate('product');
+  const favoriteProducts = favorites.map(fav => fav.product);
+
+  res.status(200).json(favoriteProducts);
+});
+
+const removeFavoriteProduct = asyncHandler(async (req, res) => {
+  const { productId } = req.params;
+  const userId = req.user._id;
+
+  await Favorite.findOneAndDelete({ user: userId, product: productId });
+
+  res.status(200).json({ message: 'Product removed from favorites' });
+});
+
 module.exports = {
   createProduct,
   getAllProducts,
@@ -289,4 +345,8 @@ module.exports = {
   deleteProductsByAmdin,
   getAllSoldProducts,
   getAllProductsofUser,
+  getProductsByCategory,
+  addFavoriteProduct,
+  getFavoriteProducts,
+  removeFavoriteProduct,
 };
