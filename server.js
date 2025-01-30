@@ -11,7 +11,7 @@ const productRoute = require("./routes/productRoute");
 const biddingRoute = require("./routes/biddingRoute");
 const categoryRoute = require("./routes/categoryRoute");
 const errorHandler = require("./middleWare/errorMiddleWare");
-const User = require("./model/userModel");
+
 
 const app = express();
 
@@ -19,13 +19,8 @@ app.use(
   cors({
     origin: ["http://localhost:3000", "https://bidding-website.vercel.app"], 
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"], // Specify allowed methods
-    allowedHeaders: ["Content-Type", "Authorization"], // Specify headers
   })
 );
-
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
 
 //middlewares
 app.use(express.json());
