@@ -15,6 +15,18 @@ const User = require("./model/userModel");
 
 const app = express();
 
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "https://bidding-website.vercel.app"], 
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"], // Specify allowed methods
+    allowedHeaders: ["Content-Type", "Authorization"], // Specify headers
+  })
+);
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
 //middlewares
 app.use(express.json());
 app.use(cookieParser());
@@ -24,16 +36,7 @@ app.use(
   })
 );
 app.use(bodyParser.json());
-app.use(cors());
 
-app.use(
-  cors({
-    origin: ["http://localhost:3000", "https://bidding-website.vercel.app"], // Remove '*'
-    credentials: true, // Allow cookies & authentication headers
-    methods: ["GET", "POST", "PUT", "DELETE"], // Specify allowed methods
-    allowedHeaders: ["Content-Type", "Authorization"], // Specify headers
-  })
-);
 const PORT = process.env.PORT || 5000;
 
 //Routes Middleware
