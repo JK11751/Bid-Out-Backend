@@ -17,7 +17,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://bidding-website.vercel.app"], 
+    origin: ["http://localhost:3000", "https://www.butimepieces.com", "https://bidding-website.vercel.app"], 
     credentials: true,
   })
 );
