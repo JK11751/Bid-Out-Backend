@@ -340,6 +340,49 @@ const removeFavoriteProduct = asyncHandler(async (req, res) => {
   res.status(200).json({ message: 'Product removed from favorites' });
 });
 
+const getAllCategories = asyncHandler(async (req, res) => {
+  const categories = await Product.distinct("category");
+  res.status(200).json(categories);
+});
+
+
+const searchProducts = asyncHandler(async (req, res) => {
+  const { category, minPrice, maxPrice } = req.query;
+
+  // Build dynamic query object
+  const query = {};
+
+  if (category) {
+    query.category = { $regex: new RegExp(category, 'i') }; // case-insensitive match
+  }
+
+  if (minPrice || maxPrice) {
+    query.price = {};
+    if (minPrice) query.price.$gte = Number(minPrice);
+    if (maxPrice) query.price.$lte = Number(maxPrice);
+  }
+
+  const products = await Product.find(query).sort("-createdAt").populate("user");
+
+  const productsWithDetails = await Promise.all(
+    products.map(async (product) => {
+      const latestBid = await BiddingProduct.findOne({ product: product._id }).sort("-createdAt");
+      const biddingPrice = latestBid ? latestBid.price : product.price;
+
+      const totalBids = await BiddingProduct.countDocuments({ product: product._id });
+
+      return {
+        ...product._doc,
+        biddingPrice,
+        totalBids,
+      };
+    })
+  );
+
+  res.status(200).json(productsWithDetails);
+});
+
+
 module.exports = {
   createProduct,
   getAllProducts,
@@ -356,4 +399,6 @@ module.exports = {
   addFavoriteProduct,
   getFavoriteProducts,
   removeFavoriteProduct,
+  searchProducts,
+  getAllCategories,
 };

@@ -16,6 +16,8 @@ const {
   addFavoriteProduct,
   getFavoriteProducts,
   removeFavoriteProduct,
+  getAllCategories,
+  searchProducts,
 } = require("../controllers/productCtr");
 const { upload } = require("../utils/fileUpload");
 const { protect, isSeller, isAdmin } = require("../middleWare/authMiddleWare");
@@ -33,6 +35,8 @@ router.delete('/favorites/:productId', protect, removeFavoriteProduct);
 router.post('/favorites', protect, addFavoriteProduct);
 router.get('/favorites', protect, getFavoriteProducts);
 router.get('/category/:category', getProductsByCategory);
+router.get("/search", searchProducts);
+router.get("/categories", getAllCategories);
 router.get("/:id", getProductBySlug);
 
 router.get("/:productId/reviews", getReviews);
