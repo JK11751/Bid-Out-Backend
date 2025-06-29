@@ -3,6 +3,69 @@ const Product = require("../model/productModel");
 const BiddingProduct = require("../model/biddingProductModel");
 const sendEmail = require("../utils/sendEmail");
 const User = require("../model/userModel");
+const Cart = require("../model/cartModel"); 
+
+const addToCart = asyncHandler(async (req, res) => {
+  const { productId } = req.body;
+  const userId = req.user.id;
+
+  // 1. Check if product exists and is available
+  const product = await Product.findById(productId);
+  if (!product) {
+    res.status(404);
+    throw new Error("Product not found");
+  }
+
+  if (!product.isverify) {
+    res.status(400);
+    throw new Error("This product is not verified for sale.");
+  }
+
+  if (product.isSoldout) {
+    res.status(400);
+    throw new Error("This product has already been sold out.");
+  }
+
+  // 2. Check if product is already in cart
+  const existingCartItem = await Cart.findOne({ user: userId, product: productId });
+
+  if (existingCartItem) {
+    res.status(400);
+    throw new Error("This product is already in your cart.");
+  }
+
+  // 3. Add to cart
+  const cartItem = await Cart.create({
+    user: userId,
+    product: productId,
+    quantity: 1, // default to 1 if quantity not supplied
+  });
+
+  res.status(201).json(cartItem);
+});
+
+const getCartItems = asyncHandler(async (req, res) => {
+  const cart = await Cart.find({ user: req.user.id }).populate("product");
+  res.status(200).json(cart);
+});
+
+
+const removeFromCart = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const cartItemId = req.params.id;
+
+  // Find the cart item by ID and user
+  const cartItem = await Cart.findOne({ _id: cartItemId, user: userId });
+
+  if (!cartItem) {
+    res.status(404);
+    throw new Error("Cart item not found or does not belong to you");
+  }
+
+  await cartItem.remove();
+  res.status(200).json({ message: "Item removed from cart" });
+});
+
 
 const placeBid = asyncHandler(async (req, res) => {
   const { productId, price } = req.body;
@@ -128,6 +191,9 @@ const sellProduct = asyncHandler(async (req, res) => {
 
 module.exports = {
   placeBid,
+  addToCart,
+  getCartItems,
+  removeFromCart,
   getBiddingHistory,
   sellProduct,
 };

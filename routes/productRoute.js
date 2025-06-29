@@ -29,10 +29,11 @@ router.get("/", getAllProducts);
 router.get("/user", protect, getAllProductsofUser);
 router.get("/won-products", protect, getWonProducts);
 router.get("/sold", getAllSoldProducts);
-router.get("/:id", getProductBySlug);
+router.delete('/favorites/:productId', protect, removeFavoriteProduct);
 router.post('/favorites', protect, addFavoriteProduct);
 router.get('/favorites', protect, getFavoriteProducts);
 router.get('/category/:category', getProductsByCategory);
+router.get("/:id", getProductBySlug);
 
 router.get("/:productId/reviews", getReviews);
 router.post("/:productId/reviews", protect, createOrUpdateReview,);
@@ -41,5 +42,5 @@ router.post("/:productId/reviews", protect, createOrUpdateReview,);
 router.patch("/admin/product-verified/:id", protect, isAdmin, verifyAndAddCommissionProductByAmdin);
 router.get("/admin/products", protect, isAdmin, getAllProductsByAmdin);
 router.delete("/admin/products", protect, isAdmin, deleteProductsByAmdin);
-router.delete('/favorites/:productId', protect, removeFavoriteProduct);
+
 module.exports = router;

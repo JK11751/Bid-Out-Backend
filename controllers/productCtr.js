@@ -305,6 +305,13 @@ const addFavoriteProduct = asyncHandler(async (req, res) => {
   const { productId } = req.body;
   const userId = req.user._id;
 
+  // Check if already in favorites
+  const existingFavorite = await Favorite.findOne({ user: userId, product: productId });
+
+  if (existingFavorite) {
+    return res.status(400).json({ message: 'Product is already in your favorites' });
+  }
+
   const favorite = new Favorite({
     user: userId,
     product: productId,
