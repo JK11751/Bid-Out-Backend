@@ -18,6 +18,7 @@ const {
   removeFavoriteProduct,
   getAllCategories,
   searchProducts,
+  toggleVerifyStatus
 
 } = require("../controllers/productCtr");
 const { multipleUpload } = require("../utils/fileUpload");
@@ -46,5 +47,7 @@ router.post("/:productId/reviews", protect, createOrUpdateReview,);
 router.patch("/admin/product-verified/:id", protect, isAdmin, verifyAndAddCommissionProductByAmdin);
 router.get("/admin/products", protect, isAdmin, getAllProductsByAmdin);
 router.delete("/admin/products", protect, isAdmin, deleteProductsByAmdin);
+router.patch('/toggle-verify/:id', protect, isAdmin, toggleVerifyStatus);
+
 
 module.exports = router;

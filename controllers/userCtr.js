@@ -223,6 +223,60 @@ const estimateIncome = asyncHandler(async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+const path = require("path");
+
+const updateUserProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  if (req.body.name) user.name = req.body.name;
+  if (req.body.role) user.role = req.body.role;
+  if (req.body.phone) user.phone = req.body.phone
+  user.phone = req.body.phone || user.phone;
+
+  // Handle photo upload
+  if (req.file) {
+    const photoPath = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    user.photo = photoPath;
+  }
+
+  await user.save();
+
+  res.status(200).json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    photo: user.photo,
+  });
+});
+
+
+// DELETE user and all related data
+const deleteUser = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+
+  const user = await User.findById(userId);
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  // Delete all products created by the user
+  await Product.deleteMany({ user: userId });
+
+  // Delete the user
+  await User.findByIdAndDelete(userId);
+
+  res.status(200).json({ message: "User and all associated data deleted successfully" });
+});
+
+
+
 module.exports = {
   registerUser,
   loginUser,
@@ -233,4 +287,6 @@ module.exports = {
   getUser,
   getUserBalance,
   getAllUser,
+  deleteUser,
+  updateUserProfile
 };

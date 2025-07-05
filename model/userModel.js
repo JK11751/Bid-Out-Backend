@@ -12,7 +12,10 @@ const userSchema = mongoose.Schema(
       require: [true, "Please add a email"],
       unique: true,
       trim: true,
-      match: [/^\s*[\w\-\+_]+(\.[\w\-\+_]+)*\@[\w\-\+_]+\.[\w\-\+_]+(\.[\w\-\+_]+)*\s*$/, "Please enter a valid email"],
+      match: [
+        /^\s*[\w\-\+_]+(\.[\w\-\+_]+)*\@[\w\-\+_]+\.[\w\-\+_]+(\.[\w\-\+_]+)*\s*$/,
+        "Please enter a valid email",
+      ],
     },
     password: {
       type: String,
@@ -23,6 +26,9 @@ const userSchema = mongoose.Schema(
       type: String,
       require: [true, "Please add a photo"],
       default: "https://cdn-icons-png.flaticon.com/512/2202/2202112.png",
+    },
+    phone: {
+      type: Number,
     },
     role: {
       type: String,

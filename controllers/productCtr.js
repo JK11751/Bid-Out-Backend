@@ -259,7 +259,7 @@ const updateProduct = asyncHandler(async (req, res) => {
 
 // for admin only users
 const verifyAndAddCommissionProductByAmdin = asyncHandler(async (req, res) => {
-  const { commission } = req.body;
+  const { price } = req.body;
   const { id } = req.params;
 
   const product = await Product.findById(id);
@@ -269,7 +269,7 @@ const verifyAndAddCommissionProductByAmdin = asyncHandler(async (req, res) => {
   }
 
   product.isverify = true;
-  product.commission = commission;
+  product.price = price;
 
   await product.save();
 
@@ -394,6 +394,21 @@ const searchProducts = asyncHandler(async (req, res) => {
   res.status(200).json(productsWithDetails);
 });
 
+const toggleVerifyStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const product = await Product.findById(id);
+  if (!product) {
+    res.status(404);
+    throw new Error("Product not found");
+  }
+
+  product.isverify = !product.isverify; // toggle
+  await product.save();
+
+  res.status(200).json({ message: "Verification status updated", isverify: product.isverify });
+});
+
 
 module.exports = {
   createProduct,
@@ -413,4 +428,5 @@ module.exports = {
   removeFavoriteProduct,
   searchProducts,
   getAllCategories,
+  toggleVerifyStatus,
 };
