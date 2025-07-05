@@ -6,7 +6,7 @@ const BiddingProduct = require("../model/biddingProductModel");
 const cloudinary = require("cloudinary").v2;
 
 const createProduct = asyncHandler(async (req, res) => {
-  const { title, description, price, category, height, lengthpic, width, mediumused, weigth } = req.body;
+  const { title, description, price, category, color, casesize, brand, material } = req.body;
   const userId = req.user.id;
 
   const originalSlug = slugify(title, {
@@ -56,11 +56,10 @@ const createProduct = asyncHandler(async (req, res) => {
     description,
     price,
     category,
-    height,
-    lengthpic,
-    width,
-    mediumused,
-    weigth,
+    color,
+    casesize,
+    material,
+    brand,
     image: fileData,
   });
   res.status(201).json({

@@ -22,9 +22,9 @@ const productSchema = mongoose.Schema(
       trime: true,
     },
     image: {
-      type: Object,
-      default: {},
-    },
+  type: Object, 
+  default: [],
+},
     category: {
       type: String,
       required: [true, "Post category is required"],
@@ -38,20 +38,17 @@ const productSchema = mongoose.Schema(
       type: Number,
       require: [true, "Please add a Price"],
     },
-    height: {
+    casesize: {
       type: Number,
     },
-    lengthpic: {
-      type: Number,
-    },
-    width: {
-      type: Number,
-    },
-    mediumused: {
+    material: {
       type: String,
     },
-    weigth: {
-      type: Number,
+    brand: {
+      type: String,
+    },
+    color: {
+      type: String,
     },
     isverify: {
       type: Boolean,
