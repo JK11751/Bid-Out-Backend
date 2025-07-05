@@ -1,22 +1,32 @@
-const multer = require("multer")
+const multer = require("multer");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads")
+    cb(null, "uploads");
   },
   filename: function (req, file, cb) {
-    cb(null, new Date().toISOString().replace(/:/g, "-") + "-" + file.originalname) // 23/08/2022
+    cb(null, new Date().toISOString().replace(/:/g, "-") + "-" + file.originalname);
   },
-})
+});
 
 function fileFilter(req, file, cb) {
-  if (file.mimetype === "image/png" || file.mimetype === "image/jpg" || file.mimetype === "image/jpeg") {
-    cb(null, true)
+  if (
+    file.mimetype === "image/png" ||
+    file.mimetype === "image/jpg" ||
+    file.mimetype === "image/jpeg"
+  ) {
+    cb(null, true);
   } else {
-    cb(null, false)
+    cb(null, false);
   }
 }
 
-const upload = multer({ storage, fileFilter })
+const upload = multer({ storage, fileFilter });
 
-module.exports = { upload }
+// ✅ This enables multiple image upload for field name "images"
+const multipleUpload = upload.array("images", 5);
+
+module.exports = {
+  upload,
+  multipleUpload, // ✅ export this too
+};

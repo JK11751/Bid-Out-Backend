@@ -22,7 +22,7 @@ const productSchema = mongoose.Schema(
       trime: true,
     },
     image: {
-  type: Object, 
+  type: [Object], 
   default: [],
 },
     category: {

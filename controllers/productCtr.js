@@ -28,31 +28,38 @@ const createProduct = asyncHandler(async (req, res) => {
     throw new Error("Please fill in all fields");
   }
 
-  let fileData = {};
-  if (req.file) {
-    let uploadedFile;
-    try {
-      uploadedFile = await cloudinary.uploader.upload(req.file.path, {
-        folder: "Bidding/Product",
-        resource_type: "image",
-      });
-    } catch (error) {
-      res.status(500);
-      throw new Error("Image could not be uploaded");
+  const imageFiles = [];
+let mainImage = null;
+
+if (req.files && req.files.length > 0) {
+  for (let i = 0; i < req.files.length; i++) {
+    const file = req.files[i];
+    const uploaded = await cloudinary.uploader.upload(file.path, {
+      folder: "Bidding/Product",
+      resource_type: "image",
+    });
+
+    const imageData = {
+      fileName: file.originalname,
+      filePath: uploaded.secure_url,
+      fileType: file.mimetype,
+      public_id: uploaded.public_id,
+    };
+
+    // First image becomes the main
+    if (i === 0) {
+      mainImage = imageData;
     }
 
-    fileData = {
-      fileName: req.file.originalname,
-      filePath: uploadedFile.secure_url,
-      fileType: req.file.mimetype,
-      public_id: uploadedFile.public_id,
-    };
+    imageFiles.push(imageData);
   }
+}
+
 
   const product = await Product.create({
     user: userId,
     title,
-    slug: slug,
+    slug,
     description,
     price,
     category,
@@ -60,13 +67,12 @@ const createProduct = asyncHandler(async (req, res) => {
     casesize,
     material,
     brand,
-    image: fileData,
+    image: imageFiles, // store as array
   });
-  res.status(201).json({
-    success: true,
-    data: product,
-  });
+
+  res.status(201).json({ success: true, data: product });
 });
+
 
 const getAllProducts = asyncHandler(async (req, res) => {
   const products = await Product.find({}).sort("-createdAt").populate("user");
@@ -325,10 +331,17 @@ const getFavoriteProducts = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
   const favorites = await Favorite.find({ user: userId }).populate('product');
-  const favoriteProducts = favorites.map(fav => fav.product);
+
+  // Filter out nulls (e.g., when a product is deleted)
+  const validFavorites = favorites.filter(fav => fav.product !== null);
+
+  // Return fully populated product objects
+  const favoriteProducts = validFavorites.map(fav => fav.product);
 
   res.status(200).json(favoriteProducts);
 });
+
+
 
 const removeFavoriteProduct = asyncHandler(async (req, res) => {
   const { productId } = req.params;

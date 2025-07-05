@@ -18,15 +18,15 @@ const {
   removeFavoriteProduct,
   getAllCategories,
   searchProducts,
+
 } = require("../controllers/productCtr");
-const { upload } = require("../utils/fileUpload");
+const { multipleUpload } = require("../utils/fileUpload");
 const { protect, isSeller, isAdmin } = require("../middleWare/authMiddleWare");
 const router = express.Router();
 
-router.post("/", protect, isSeller, upload.single("image"), createProduct);
+router.post("/", protect, isSeller, multipleUpload, createProduct);
 router.delete("/:id", protect, isSeller, deleteProduct);
-router.put("/:id", protect, isSeller, upload.single("image"), updateProduct);
-
+router.put("/:id", protect, isSeller, multipleUpload, updateProduct);
 router.get("/", getAllProducts);
 router.get("/user", protect, getAllProductsofUser);
 router.get("/won-products", protect, getWonProducts);
