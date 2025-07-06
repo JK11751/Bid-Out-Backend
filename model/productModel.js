@@ -47,7 +47,7 @@ const productSchema = mongoose.Schema(
     brand: {
       type: String,
     },
-    color: {
+    modelnumber: {
       type: String,
     },
     isverify: {
