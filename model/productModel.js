@@ -25,7 +25,7 @@ const productSchema = mongoose.Schema(
   type: [Object], 
   default: [],
 },
-    brand: {
+    category: {
       type: String,
       required: [true, "Post category is required"],
       default: "All",
@@ -44,7 +44,7 @@ const productSchema = mongoose.Schema(
     material: {
       type: String,
     },
-    category: {
+    brand: {
       type: String,
     },
     modelnumber: {
