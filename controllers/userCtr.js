@@ -255,6 +255,21 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   });
 });
 
+const saveShippingAddress = asyncHandler(async (req, res) => {
+  const { fullName, address, city, postalCode, country } = req.body;
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  user.shippingAddress = { fullName, address, city, postalCode, country };
+  await user.save();
+
+  res.status(200).json({ message: "Shipping address saved", shippingAddress: user.shippingAddress });
+});
+
 
 // DELETE user and all related data
 const deleteUser = asyncHandler(async (req, res) => {
@@ -288,5 +303,6 @@ module.exports = {
   getUserBalance,
   getAllUser,
   deleteUser,
-  updateUserProfile
+  updateUserProfile,
+  saveShippingAddress
 };
