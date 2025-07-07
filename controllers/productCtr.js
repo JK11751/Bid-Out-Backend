@@ -75,7 +75,7 @@ if (req.files && req.files.length > 0) {
 
 
 const getAllProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find({}).sort("-createdAt").populate("user");
+  const products = await Product.find({ isverify: true }).sort("-createdAt").populate("user");
 
   const productsWithDetails = await Promise.all(
     products.map(async (product) => {
