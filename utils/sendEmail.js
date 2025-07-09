@@ -15,49 +15,98 @@ const sendEmail = async (options) => {
     },
   });
 
-  // Create a unique invoice file
+  // Generate file path
   const invoicePath = path.join(
     __dirname,
     `../invoices/invoice-${Date.now()}.pdf`
   );
   fs.mkdirSync(path.dirname(invoicePath), { recursive: true });
 
-  // Generate PDF invoice
-  const doc = new PDFDocument();
+  const doc = new PDFDocument({ margin: 50 });
   const writeStream = fs.createWriteStream(invoicePath);
   doc.pipe(writeStream);
 
-  doc.fontSize(18).text("INVOICE", { align: "center" });
-  doc.moveDown();
+  // Header
+  doc
+    .fillColor("#333")
+    .fontSize(22)
+    .text("INVOICE", { align: "center" })
+    .moveDown();
 
-  doc.fontSize(14).text(`Customer Name: ${options.name}`);
-  doc.text(`Customer Email: ${options.email}`);
-  doc.text(`Total Amount: $${options.amount}`);
-  doc.moveDown();
+  // Customer Info
+  doc
+    .fontSize(14)
+    .fillColor("#444")
+    .text(`Customer Name: ${options.name}`)
+    .text(`Customer Email: ${options.email}`)
+    .text(`Total Amount: $${options.amount}`)
+    .moveDown();
 
+  // Address
   if (options.shipping) {
-    doc.text("Shipping Address:");
-    doc.text(`${options.shipping.fullName}`);
-    doc.text(`${options.shipping.address}, ${options.shipping.city}`);
-    doc.text(`${options.shipping.postalCode}, ${options.shipping.country}`);
-    doc.moveDown();
+    doc
+      .fillColor("#000")
+      .fontSize(12)
+      .text("Shipping Address", { underline: true })
+      .moveDown(0.3)
+      .text(`Full Name: ${options.shipping.fullName}`)
+      .text(`Address: ${options.shipping.address}`)
+      .text(`City: ${options.shipping.city}`)
+      .text(`Postal Code: ${options.shipping.postalCode}`)
+      .text(`Country: ${options.shipping.country}`)
+      .moveDown();
   }
 
-  if (options.cartItems && options.cartItems.length > 0) {
-    doc.text("Order Details:");
-    options.cartItems.forEach((item, index) => {
-      doc.text(
-        `${index + 1}. ${item.product.title} - $${item.product.price} x ${
-          item.quantity
-        } = $${(item.product.price * item.quantity).toFixed(2)}`
-      );
-    });
-  }
+  // Divider
+  doc
+    .moveTo(50, doc.y)
+    .lineTo(550, doc.y)
+    .strokeColor("#CCCCCC")
+    .stroke()
+    .moveDown();
+
+  // Order Details Table Header
+  doc
+    .fillColor("#000")
+    .fontSize(12)
+    .text("Order Details", { underline: true })
+    .moveDown(0.5);
+
+  // Table columns
+  doc
+    .font("Helvetica-Bold")
+    .text("No.", 50, doc.y, { width: 40 })
+    .text("Product", 90, doc.y, { width: 200 })
+    .text("Price", 300, doc.y, { width: 80 })
+    .text("Qty", 380, doc.y, { width: 50 })
+    .text("Total", 440, doc.y, { width: 100 })
+    .moveDown(0.5)
+    .font("Helvetica");
+
+  // Table rows
+  options.cartItems.forEach((item, index) => {
+    const { title, price } = item.product;
+    const quantity = item.quantity;
+    const total = (price * quantity).toFixed(2);
+
+    doc
+      .text(`${index + 1}`, 50, doc.y, { width: 40 })
+      .text(title, 90, doc.y, { width: 200 })
+      .text(`$${price}`, 300, doc.y, { width: 80 })
+      .text(`${quantity}`, 380, doc.y, { width: 50 })
+      .text(`$${total}`, 440, doc.y, { width: 100 });
+  });
+
+  doc.moveDown(2);
+
+  doc
+    .font("Helvetica-Bold")
+    .text(`Grand Total: $${options.amount}`, { align: "right" });
 
   doc.end();
   await new Promise((resolve) => writeStream.on("finish", resolve));
 
-  // Email Message
+  // Send email with attachment
   const message = {
     from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`,
     to: options.email,
@@ -68,7 +117,7 @@ const sendEmail = async (options) => {
         <p>Hello ${options.name},</p>
         <p>Thank you for your order!</p>
         <p><strong>Total Paid:</strong> $${options.amount}</p>
-        <p>Please find the invoice attached.</p>
+        <p>Please find your invoice attached.</p>
         <br/>
         <p>Regards,<br/>butimepieces.com Team</p>
       </div>
@@ -83,8 +132,6 @@ const sendEmail = async (options) => {
   };
 
   await transport.sendMail(message);
-
-  // Delete file after sending
   fs.unlink(invoicePath, () => {});
 };
 
