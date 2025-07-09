@@ -137,6 +137,10 @@ const placeOrder = asyncHandler(async (req, res) => {
     0
   );
 
+  // Get user info
+  const user = await User.findById(userId);
+  const shipping = user.shippingAddress;
+
   // Create order
   const order = await Order.create({
     user: userId,
@@ -150,52 +154,64 @@ const placeOrder = asyncHandler(async (req, res) => {
   // Clear cart
   await Cart.deleteMany({ user: userId });
 
-  // Fetch user and shipping address
-  const user = await User.findById(userId);
-  const shipping = user.shippingAddress;
-
-  // Format address
-  const formattedAddress = shipping
-    ? `Shipping Address:\n${shipping.fullName}\n${shipping.address}, ${shipping.city}\n${shipping.postalCode}, ${shipping.country}`
-    : "Shipping Address: Not provided.";
-
-  // Format item list
-  const itemList = cartItems
+  // Generate HTML item rows
+  const itemRows = cartItems
     .map(
-      (item, i) =>
-        `${i + 1}. ${item.product.title} (x${item.quantity}) - $${(
-          item.product.price * item.quantity
-        ).toFixed(2)}`
+      (item) => `
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;">${item.product.title}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">$${(item.product.price * item.quantity).toFixed(2)}</td>
+        </tr>
+      `
     )
-    .join("\n");
+    .join("");
 
-  // Construct the email
-  const emailMessage = `
-Dear ${user.name},
+  // Build HTML email
+  const html = `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+      <h2>Order Confirmation</h2>
+      <p>Dear <strong>${user.name}</strong>,</p>
+      <p>Thank you for your order from <strong>butimepieces.com</strong>!</p>
+      <p><strong>Total Amount:</strong> $${totalAmount.toFixed(2)}</p>
 
-Thank you for your order. You have successfully placed an order worth $${totalAmount.toFixed(
-    2
-  )}.
+      <h3>Order Summary:</h3>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <thead>
+          <tr style="background-color: #f8f8f8;">
+            <th style="padding: 10px; border: 1px solid #ddd;">Item</th>
+            <th style="padding: 10px; border: 1px solid #ddd;">Quantity</th>
+            <th style="padding: 10px; border: 1px solid #ddd;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemRows}
+        </tbody>
+      </table>
 
-Order Details:
-${itemList}
+      <h3>Shipping Address:</h3>
+      <p>
+        ${shipping?.fullName || "N/A"}<br/>
+        ${shipping?.address || ""}<br/>
+        ${shipping?.city || ""}, ${shipping?.postalCode || ""}<br/>
+        ${shipping?.country || ""}
+      </p>
 
-${formattedAddress}
-
-We will process your order shortly.
-
-Regards,
-butimepieces.com Team
+      <p>We will process your order shortly and notify you once it is shipped.</p>
+      <p>Warm regards,<br/>The <strong>butimepieces.com</strong> Team</p>
+    </div>
   `;
 
+  // Send HTML email
   await sendEmail({
     email: user.email,
-    subject: "Order Confirmation",
-    message: emailMessage,
+    subject: "Order Confirmation - butimepieces.com",
+    html,
   });
 
   res.status(201).json({ message: "Order placed successfully", order });
 });
+
 
 
 const getBiddingHistory = asyncHandler(async (req, res) => {
