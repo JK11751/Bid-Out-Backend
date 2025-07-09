@@ -6,7 +6,8 @@ const router = express.Router();
 router.post("/cart", protect, addToCart);
 router.get("/cart", protect, getCartItems);
 router.post("/sell", protect, isSeller, sellProduct);
+router.post("/place-order", protect, placeOrder);
 router.delete("/cart/:id", protect, removeFromCart); 
 router.get("/:productId", getBiddingHistory);
-router.post("/place-order", protect, placeOrder);
+
 module.exports = router;
