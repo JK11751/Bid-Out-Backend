@@ -162,6 +162,17 @@ const getBiddingHistory = asyncHandler(async (req, res) => {
   res.status(200).json(biddingHistory);
 });
 
+const getOrderHistory = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  const orders = await Order.find({ user: userId })
+    .populate("products.product")
+    .sort({ createdAt: -1 });
+
+  res.status(200).json(orders);
+});
+
+
 const sellProduct = asyncHandler(async (req, res) => {
   const { productId } = req.body;
   const userId = req.user.id;
@@ -237,4 +248,5 @@ module.exports = {
   getBiddingHistory,
   sellProduct,
   placeOrder,
+  getOrderHistory,
 };
