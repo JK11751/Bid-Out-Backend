@@ -270,6 +270,18 @@ const saveShippingAddress = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "Shipping address saved", shippingAddress: user.shippingAddress });
 });
 
+const getShippingAddress = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  res.status(200).json({ shippingAddress: user.shippingAddress });
+});
+
+
 
 // DELETE user and all related data
 const deleteUser = asyncHandler(async (req, res) => {
@@ -304,5 +316,6 @@ module.exports = {
   getAllUser,
   deleteUser,
   updateUserProfile,
-  saveShippingAddress
+  saveShippingAddress,
+  getShippingAddress,
 };

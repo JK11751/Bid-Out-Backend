@@ -1,4 +1,5 @@
 const asyncHandler = require("express-async-handler");
+const PDFDocument = require("pdfkit");
 const Product = require("../model/productModel");
 const BiddingProduct = require("../model/biddingProductModel");
 const sendEmail = require("../utils/sendEmail");
@@ -124,24 +125,19 @@ const placeBid = asyncHandler(async (req, res) => {
 const placeOrder = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
-  // Fetch cart items
   const cartItems = await Cart.find({ user: userId }).populate("product");
   if (!cartItems.length) {
     res.status(400);
     throw new Error("Your cart is empty.");
   }
 
-  // Calculate total
   const totalAmount = cartItems.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
     0
   );
 
-  // Get user info
   const user = await User.findById(userId);
-  const shipping = user.shippingAddress;
 
-  // Create order
   const order = await Order.create({
     user: userId,
     products: cartItems.map((item) => ({
@@ -151,67 +147,73 @@ const placeOrder = asyncHandler(async (req, res) => {
     totalAmount,
   });
 
-  // Clear cart
   await Cart.deleteMany({ user: userId });
 
-  // Generate HTML item rows
-  const itemRows = cartItems
-    .map(
-      (item) => `
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;">${item.product.title}</td>
-          <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
-          <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">$${(item.product.price * item.quantity).toFixed(2)}</td>
-        </tr>
-      `
-    )
-    .join("");
+  // 📄 Generate PDF Invoice
+  const doc = new PDFDocument();
+  let buffers = [];
+  doc.on("data", buffers.push.bind(buffers));
+  doc.on("end", async () => {
+    const pdfBuffer = Buffer.concat(buffers);
 
-  // Build HTML email
-  const html = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-      <h2>Order Confirmation</h2>
-      <p>Dear <strong>${user.name}</strong>,</p>
-      <p>Thank you for your order from <strong>butimepieces.com</strong>!</p>
-      <p><strong>Total Amount:</strong> $${totalAmount.toFixed(2)}</p>
+    const shipping = user.shippingAddress || {};
+    const formattedShipping = `
+${shipping.fullName || ""}
+${shipping.address || ""}, ${shipping.city || ""}
+${shipping.postalCode || ""}, ${shipping.country || ""}
+    `;
 
-      <h3>Order Summary:</h3>
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-        <thead>
-          <tr style="background-color: #f8f8f8;">
-            <th style="padding: 10px; border: 1px solid #ddd;">Item</th>
-            <th style="padding: 10px; border: 1px solid #ddd;">Quantity</th>
-            <th style="padding: 10px; border: 1px solid #ddd;">Subtotal</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemRows}
-        </tbody>
-      </table>
+    const message = `Dear ${user.name},
 
-      <h3>Shipping Address:</h3>
-      <p>
-        ${shipping?.fullName || "N/A"}<br/>
-        ${shipping?.address || ""}<br/>
-        ${shipping?.city || ""}, ${shipping?.postalCode || ""}<br/>
-        ${shipping?.country || ""}
-      </p>
+Thank you for your order. Please find your invoice attached.
 
-      <p>We will process your order shortly and notify you once it is shipped.</p>
-      <p>Warm regards,<br/>The <strong>butimepieces.com</strong> Team</p>
-    </div>
-  `;
+Total: $${totalAmount.toFixed(2)}
 
-  // Send HTML email
-  await sendEmail({
-    email: user.email,
-    subject: "Order Confirmation - butimepieces.com",
-    html,
+Regards,
+butimepieces.com Team`;
+
+    await sendEmail({
+      email: user.email,
+      subject: "🧾 Invoice - Order Confirmation",
+      message,
+      attachments: [
+        {
+          filename: "invoice.pdf",
+          content: pdfBuffer,
+          contentType: "application/pdf",
+        },
+      ],
+    });
+
+    res.status(201).json({ message: "Order placed successfully", order });
   });
 
-  res.status(201).json({ message: "Order placed successfully", order });
-});
+  // 🧾 PDF content
+  doc.fontSize(20).text("Invoice", { align: "center" });
+  doc.moveDown();
 
+  doc.fontSize(14).text(`Customer: ${user.name}`);
+  doc.text(`Email: ${user.email}`);
+  doc.moveDown();
+
+  doc.fontSize(14).text("Shipping Address:");
+  doc.text(formattedShipping);
+  doc.moveDown();
+
+  doc.text("Items Ordered:", { underline: true });
+  cartItems.forEach((item, index) => {
+    doc.text(
+      `${index + 1}. ${item.product.title} x${item.quantity} - $${(
+        item.product.price * item.quantity
+      ).toFixed(2)}`
+    );
+  });
+
+  doc.moveDown();
+  doc.text(`Total Amount: $${totalAmount.toFixed(2)}`, { bold: true });
+
+  doc.end(); // finish PDF stream
+});
 
 
 const getBiddingHistory = asyncHandler(async (req, res) => {
