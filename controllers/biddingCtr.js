@@ -3,8 +3,8 @@ const Product = require("../model/productModel");
 const BiddingProduct = require("../model/biddingProductModel");
 const sendEmail = require("../utils/sendEmail");
 const User = require("../model/userModel");
-const Cart = require("../model/cartModel"); 
-const Order = require("../model/orderModel"); 
+const Cart = require("../model/cartModel");
+const Order = require("../model/orderModel");
 
 const addToCart = asyncHandler(async (req, res) => {
   const { productId } = req.body;
@@ -28,7 +28,10 @@ const addToCart = asyncHandler(async (req, res) => {
   }
 
   // 2. Check if product is already in cart
-  const existingCartItem = await Cart.findOne({ user: userId, product: productId });
+  const existingCartItem = await Cart.findOne({
+    user: userId,
+    product: productId,
+  });
 
   if (existingCartItem) {
     res.status(400);
@@ -50,7 +53,6 @@ const getCartItems = asyncHandler(async (req, res) => {
   res.status(200).json(cart);
 });
 
-
 const removeFromCart = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const cartItemId = req.params.id;
@@ -66,7 +68,6 @@ const removeFromCart = asyncHandler(async (req, res) => {
   await cartItem.remove();
   res.status(200).json({ message: "Item removed from cart" });
 });
-
 
 const placeBid = asyncHandler(async (req, res) => {
   const { productId, price } = req.body;
@@ -88,7 +89,10 @@ const placeBid = asyncHandler(async (req, res) => {
     throw new Error("Your bid must be equal to or higher than the minimum bidding price");
   } */
 
-  const existingUserBid = await BiddingProduct.findOne({ user: userId, product: productId });
+  const existingUserBid = await BiddingProduct.findOne({
+    user: userId,
+    product: productId,
+  });
 
   if (existingUserBid) {
     if (price <= existingUserBid.price) {
@@ -99,7 +103,9 @@ const placeBid = asyncHandler(async (req, res) => {
     await existingUserBid.save();
     return res.status(200).json({ biddingProduct: existingUserBid });
   } else {
-    const highestBid = await BiddingProduct.findOne({ product: productId }).sort({ price: -1 });
+    const highestBid = await BiddingProduct.findOne({
+      product: productId,
+    }).sort({ price: -1 });
     if (highestBid && price <= highestBid.price) {
       res.status(400);
       throw new Error("Your bid must be higher than the current highest bid");
@@ -115,7 +121,6 @@ const placeBid = asyncHandler(async (req, res) => {
   }
 });
 
-
 const placeOrder = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
@@ -127,12 +132,15 @@ const placeOrder = asyncHandler(async (req, res) => {
   }
 
   // Calculate total
-  const totalAmount = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const totalAmount = cartItems.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0
+  );
 
   // Create order
   const order = await Order.create({
     user: userId,
-    products: cartItems.map(item => ({
+    products: cartItems.map((item) => ({
       product: item.product._id,
       quantity: item.quantity,
     })),
@@ -142,12 +150,48 @@ const placeOrder = asyncHandler(async (req, res) => {
   // Clear cart
   await Cart.deleteMany({ user: userId });
 
-  // Send email
+  // Fetch user and shipping address
   const user = await User.findById(userId);
+  const shipping = user.shippingAddress;
+
+  // Format address
+  const formattedAddress = shipping
+    ? `Shipping Address:\n${shipping.fullName}\n${shipping.address}, ${shipping.city}\n${shipping.postalCode}, ${shipping.country}`
+    : "Shipping Address: Not provided.";
+
+  // Format item list
+  const itemList = cartItems
+    .map(
+      (item, i) =>
+        `${i + 1}. ${item.product.title} (x${item.quantity}) - $${(
+          item.product.price * item.quantity
+        ).toFixed(2)}`
+    )
+    .join("\n");
+
+  // Construct the email
+  const emailMessage = `
+Dear ${user.name},
+
+Thank you for your order. You have successfully placed an order worth $${totalAmount.toFixed(
+    2
+  )}.
+
+Order Details:
+${itemList}
+
+${formattedAddress}
+
+We will process your order shortly.
+
+Regards,
+butimepieces.com Team
+  `;
+
   await sendEmail({
     email: user.email,
     subject: "Order Confirmation",
-    message: `Dear ${user.name},\n\nThank you for your order. You have successfully placed an order worth $${totalAmount.toFixed(2)}.\n\nWe will process your order shortly.\n\nRegards,\nJengaBay Team`,
+    message: emailMessage,
   });
 
   res.status(201).json({ message: "Order placed successfully", order });
@@ -157,7 +201,10 @@ const placeOrder = asyncHandler(async (req, res) => {
 const getBiddingHistory = asyncHandler(async (req, res) => {
   const { productId } = req.params;
 
-  const biddingHistory = await BiddingProduct.find({ product: productId }).sort("-createdAt").populate("user").populate("product");
+  const biddingHistory = await BiddingProduct.find({ product: productId })
+    .sort("-createdAt")
+    .populate("user")
+    .populate("product");
 
   res.status(200).json(biddingHistory);
 });
@@ -171,7 +218,6 @@ const getOrderHistory = asyncHandler(async (req, res) => {
 
   res.status(200).json(orders);
 });
-
 
 const sellProduct = asyncHandler(async (req, res) => {
   const { productId } = req.body;
@@ -192,13 +238,19 @@ const sellProduct = asyncHandler(async (req, res) => {
 
   // Check if the user is authorized to sell the product
   if (product.user.toString() !== userId) {
-    return res.status(403).json({ error: "You do not have permission to sell this product" });
+    return res
+      .status(403)
+      .json({ error: "You do not have permission to sell this product" });
   }
 
   // Find the highest bid
-  const highestBid = await BiddingProduct.findOne({ product: productId }).sort({ price: -1 }).populate("user");
+  const highestBid = await BiddingProduct.findOne({ product: productId })
+    .sort({ price: -1 })
+    .populate("user");
   if (!highestBid) {
-    return res.status(400).json({ error: "No winning bid found for the product" });
+    return res
+      .status(400)
+      .json({ error: "No winning bid found for the product" });
   }
 
   // Calculate commission and final price
