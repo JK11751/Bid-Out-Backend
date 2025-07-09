@@ -4,6 +4,7 @@ const BiddingProduct = require("../model/biddingProductModel");
 const sendEmail = require("../utils/sendEmail");
 const User = require("../model/userModel");
 const Cart = require("../model/cartModel"); 
+const Order = require("../model/orderModel"); 
 
 const addToCart = asyncHandler(async (req, res) => {
   const { productId } = req.body;
@@ -114,6 +115,45 @@ const placeBid = asyncHandler(async (req, res) => {
   }
 });
 
+
+const placeOrder = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  // Fetch cart items
+  const cartItems = await Cart.find({ user: userId }).populate("product");
+  if (!cartItems.length) {
+    res.status(400);
+    throw new Error("Your cart is empty.");
+  }
+
+  // Calculate total
+  const totalAmount = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+
+  // Create order
+  const order = await Order.create({
+    user: userId,
+    products: cartItems.map(item => ({
+      product: item.product._id,
+      quantity: item.quantity,
+    })),
+    totalAmount,
+  });
+
+  // Clear cart
+  await Cart.deleteMany({ user: userId });
+
+  // Send email
+  const user = await User.findById(userId);
+  await sendEmail({
+    email: user.email,
+    subject: "Order Confirmation",
+    message: `Dear ${user.name},\n\nThank you for your order. You have successfully placed an order worth $${totalAmount.toFixed(2)}.\n\nWe will process your order shortly.\n\nRegards,\nJengaBay Team`,
+  });
+
+  res.status(201).json({ message: "Order placed successfully", order });
+});
+
+
 const getBiddingHistory = asyncHandler(async (req, res) => {
   const { productId } = req.params;
 
@@ -196,4 +236,5 @@ module.exports = {
   removeFromCart,
   getBiddingHistory,
   sellProduct,
+  placeOrder,
 };

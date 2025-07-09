@@ -1,5 +1,5 @@
 const express = require("express");
-const {addToCart , getCartItems, getBiddingHistory, sellProduct, removeFromCart } = require("../controllers/biddingCtr");
+const {addToCart , getCartItems, getBiddingHistory, sellProduct, removeFromCart,placeOrder } = require("../controllers/biddingCtr");
 const { protect, isSeller } = require("../middleWare/authMiddleWare");
 const router = express.Router();
 
@@ -8,4 +8,5 @@ router.get("/cart", protect, getCartItems);
 router.post("/sell", protect, isSeller, sellProduct);
 router.delete("/cart/:id", protect, removeFromCart); 
 router.get("/:productId", getBiddingHistory);
+router.post("/place-order", protect, placeOrder);
 module.exports = router;
